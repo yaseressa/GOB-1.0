@@ -13,6 +13,9 @@ import java.util.List;
 // then press Enter. You can now see whitespace characters in your code.
 public class Gob {
     static boolean hasError = false;
+    static boolean hadRuntimeError = false;
+    static Interpreter interpreter = new Interpreter();
+
     public static void main(String[] args) throws IOException {
 
         if (args.length > 1) {
@@ -29,6 +32,7 @@ public class Gob {
         byte[] bytes = Files.readAllBytes(Paths.get(path));
         run(new String(bytes, Charset.defaultCharset()));
         if (hasError) System.exit(65);
+        if (hadRuntimeError) System.exit(70);
     }
     private static void runPrompt() throws IOException {
         InputStreamReader input = new InputStreamReader(System.in);
@@ -44,9 +48,11 @@ public class Gob {
     private static void run(String source) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
-        for (Token token : tokens) {
-            System.out.println(token);
-        }
+        var parser = new Parser(tokens);
+        Expr expr = parser.parse();
+        if (hasError) return;
+        interpreter.interpret(expr);
+
     }
     static void error(int line, String message) {
         report(line, "", message);
@@ -54,7 +60,19 @@ public class Gob {
     private static void report(int line, String where,
                                String message) {
         System.err.println(
-                "[line " + line + "] Error" + where + ": " + message);
+                "Qalad" + where + ": " + message + "   ( laynka " + line + " ).");
         hasError = true;
+    }
+    static void error(Token token, String message) {
+        if (token.type == TokenType.EOF) {
+            report(token.line, " halka u dambaysa", message);
+        } else {
+            report(token.line, " isticmaal '" + token.lexeme + "'", message);
+        }
+    }
+    static void runtimeError(RuntimeError error) {
+        System.err.println(error.getMessage() +
+                "\n   ( laynka " + error.token.line + " ).");
+        hadRuntimeError = true;
     }
     }

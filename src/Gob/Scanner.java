@@ -21,11 +21,11 @@ public class Scanner {
         keywords.put("ama", OR);
         keywords.put("daabac", PRINT);
         keywords.put("celi", RETURN);
-        keywords.put("aabe", SUPER);
+        keywords.put("ab", SUPER);
         keywords.put("kan", THIS);
         keywords.put("run", TRUE);
         keywords.put("door", VAR);
-        keywords.put("inta", WHILE);
+        keywords.put("intay", WHILE);
     }
     private final List<Token> tokens = new ArrayList<>();
     private final String source;

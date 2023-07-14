@@ -17,8 +17,10 @@ public class Scanner {
         keywords.put("wareeg", FOR);
         keywords.put("qabte", FUN);
         keywords.put("kol", IF);
+        keywords.put("kolkale", ELSE_IF);
         keywords.put("ban", NIL);
         keywords.put("ama", OR);
+        keywords.put("dhaxal", EXTENDS);
         keywords.put("daabac", PRINT);
         keywords.put("celi", RETURN);
         keywords.put("ab", SUPER);
@@ -101,6 +103,9 @@ public class Scanner {
             case '(':
                 addToken(TokenType.LEFT_PAREN);
                 break;
+            case '%':
+                addToken(PERCENT);
+                break;
             case ')':
                 addToken(TokenType.RIGHT_PAREN);
                 break;
@@ -144,8 +149,12 @@ public class Scanner {
                 if (match('/')) while (peek() != '\n' && !isAtEnd()) advance();
                 else addToken(SLASH);
                 break;
-            case ' ': case '\r': case '\t': break; case '\n': line++; break;
-            case '"': string(); break;
+            case ' ': case '\r': case '\t': break; case '\n':
+                line++;
+                break;
+            case '"':
+                string();
+                break;
             default:
                 if (isDigit(c)) {
                     number();

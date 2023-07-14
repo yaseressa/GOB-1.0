@@ -1,7 +1,6 @@
 package Gob;
 
 import java.io.BufferedReader;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
@@ -9,11 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
-// Press Shift twice to open the Search Everywhere dialog and type `show whitespaces`,
-// then press Enter. You can now see whitespace characters in your code.
 public class Gob {
     static boolean hasError = false;
-    static boolean hadRuntimeError = false;
+    static boolean hasRuntimeError = false;
     static Interpreter interpreter = new Interpreter();
 
     public static void main(String[] args) throws IOException {
@@ -32,7 +29,7 @@ public class Gob {
         byte[] bytes = Files.readAllBytes(Paths.get(path));
         run(new String(bytes, Charset.defaultCharset()));
         if (hasError) System.exit(65);
-        if (hadRuntimeError) System.exit(70);
+        if (hasRuntimeError) System.exit(70);
     }
     private static void runPrompt() throws IOException {
         InputStreamReader input = new InputStreamReader(System.in);
@@ -49,9 +46,12 @@ public class Gob {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
         var parser = new Parser(tokens);
-        Expr expr = parser.parse();
+        List<Stmt> statements = parser.parse();
         if (hasError) return;
-        interpreter.interpret(expr);
+        Resolver resolver = new Resolver(interpreter);
+        resolver.resolve(statements);
+        interpreter.
+                interpret(statements);
 
     }
     static void error(int line, String message) {
@@ -59,8 +59,7 @@ public class Gob {
     }
     private static void report(int line, String where,
                                String message) {
-        System.err.println(
-                "Qalad" + where + ": " + message + "   ( laynka " + line + " ).");
+        System.err.println("Qalad" + where + ": " + message + "   ( laynka " + line + " ).");
         hasError = true;
     }
     static void error(Token token, String message) {
@@ -71,8 +70,7 @@ public class Gob {
         }
     }
     static void runtimeError(RuntimeError error) {
-        System.err.println(error.getMessage() +
-                "\n   ( laynka " + error.token.line + " ).");
-        hadRuntimeError = true;
+        System.err.println(error.getMessage() + "\n   ( laynka " + error.token.line + " ).");
+        hasRuntimeError = true;
     }
     }

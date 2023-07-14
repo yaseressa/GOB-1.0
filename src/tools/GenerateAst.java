@@ -8,17 +8,36 @@ import java.util.Scanner;
 
 public class GenerateAst {
     public static void main(String[] args) throws IOException {
-        System.out.print("Enter the path to generate: ");
-        String outputDir = new Scanner(System.in).nextLine();
+        String outputDir = args[0];
         if (outputDir.length() == 0) {
             System.err.println("Input path must be specified.");
             System.exit(64);
         }
         defineAst(outputDir, "Expr", Arrays.asList(
+                "Assign : Token name, Expr value",
                 "Binary : Expr left, Token operator, Expr right",
+                "Call : Expr callee, Token paren, List<Expr> arguments",
+                "Get : Expr object, Token name",
                 "Grouping : Expr expression",
                 "Literal : Object value",
-                "Unary : Token operator, Expr right"
+                "Logical : Expr left, Token operator, Expr right",
+                "Set : Expr object, Token name, Expr value",
+                "Super : Token keyword, Token method",
+                "This : Token keyword",
+                "Unary : Token operator, Expr right",
+                "Variable : Token name"
+        ));
+        defineAst(outputDir, "Stmt", Arrays.asList(
+                "Block : List<Stmt> statements",
+                "Class : Token name, Expr.Variable superclass, List<Object> methods",
+                "Expression : Expr expression",
+                "Print : Expr expression",
+                "Var : Token name, Expr initializer",
+                "Function : Token name, List<Token> params, List<Stmt> body",
+                "Return : Token keyword, Expr value",
+                "If : Expr condition, Stmt thenBranch, Stmt elseBranch, Stmt elseIF",
+                "Else: Stmt statement",
+                "While : Expr condition, Stmt body"
         ));
     }
 

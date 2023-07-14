@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Gob:jar">
+    <output-path>$USER_HOME$/Desktop</output-path>
+    <root id="archive" name="Gob.jar">
+      <element id="module-output" name="Gob" />
+    </root>
+  </artifact>
+</component>

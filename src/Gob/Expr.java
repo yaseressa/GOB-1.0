@@ -5,6 +5,7 @@ import java.util.List;
 abstract class Expr {
  interface Visitor<R> {
  R visit(Assign expr);
+ R visit(CompAssign expr);
  R visit(Binary expr);
  R visit(Call expr);
  R visit(Get expr);
@@ -29,6 +30,22 @@ abstract class Expr {
  }
 
  final Token name;
+ final Expr value;
+ }
+ static class CompAssign extends Expr {
+ CompAssign(Token name, Token operator, Expr value) {
+ this.name = name;
+ this.operator = operator;
+ this.value = value;
+ }
+
+ @Override
+ <R> R accept(Visitor<R> visitor) {
+ return visitor.visit(this);
+ }
+
+ final Token name;
+ final Token operator;
  final Expr value;
  }
  static class Binary extends Expr {

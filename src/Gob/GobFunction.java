@@ -6,7 +6,7 @@ public class GobFunction implements GobCalls {
     private final Stmt.Function definition;
     private final Environment closure;
 
-    private final boolean isInitializer;
+    public final boolean isInitializer;
     GobFunction(Stmt.Function definition, Environment closure,
                 boolean isInitializer) {
         this.isInitializer = isInitializer;

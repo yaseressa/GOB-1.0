@@ -4,7 +4,7 @@ import java.util.*;
 
 public class GobInstance {
     private final GobClass klass;
-    private  Map<String, Object> fields = new HashMap<>();
+    private final Map<String, Object> fields;
 
     GobInstance(GobClass klass, Map<String, Object> prexisting) {
         this.klass = klass;

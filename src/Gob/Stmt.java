@@ -9,6 +9,7 @@ abstract class Stmt {
  R visit(Expression stmt);
  R visit(Print stmt);
  R visit(Var stmt);
+ R visit(Array stmt);
  R visit(Function stmt);
  R visit(Return stmt);
  R visit(If stmt);
@@ -80,6 +81,20 @@ abstract class Stmt {
 
  final Token name;
  final Expr initializer;
+ }
+ static class Array extends Stmt {
+ Array(Token name, ArrayList<Expr> initializer) {
+ this.name = name;
+ this.initializer = initializer;
+ }
+
+ @Override
+ <R> R accept(Visitor<R> visitor) {
+ return visitor.visit(this);
+ }
+
+ final Token name;
+ final ArrayList<Expr> initializer;
  }
  static class Function extends Stmt {
  Function(Token name, List<Token> params, List<Stmt> body) {

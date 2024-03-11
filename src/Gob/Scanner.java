@@ -64,8 +64,8 @@ public class Scanner {
         if (current + 1 >= source.length()) return '\0';
         return source.charAt(current + 1);
     }
-    private void string() {
-        while (peek() != '"' && !isAtEnd()) {
+    private void string(char s) {
+        while ((s == '"' && peek() != '"') || (s == '\'' && peek() != '\'') && !isAtEnd()) {
             if (peek() == '\n') line++;
             advance();
         }
@@ -153,7 +153,10 @@ public class Scanner {
                 line++;
                 break;
             case '"':
-                string();
+                string('"');
+                break;
+            case '\'':
+                string('\'');
                 break;
             default:
                 if (isDigit(c)) {

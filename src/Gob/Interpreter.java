@@ -1,9 +1,6 @@
 package Gob;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
     final Environment globals = new Environment();
@@ -202,14 +199,25 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
             ENV.declare("ab", superclass);
         }
         Map<String, GobFunction> methods = new HashMap<>();
+        Map<String, LinkedList<GobFunction>> initializers = new HashMap<>();
         for (Object method : stmt.methods) {
             if (method instanceof Stmt.Function) {
-                var function = new GobFunction((Stmt.Function) method, ENV, ((Stmt.Function) method).name.lexeme.equals(stmt.name.lexeme));
-                if(!methods.containsKey(((Stmt.Function) method).name.lexeme))
-                    methods.put(((Stmt.Function) method).name.lexeme, function);
-                else
-                    throw new RuntimeError((((Stmt.Function) method).name), ((Stmt.Function) method).name.lexeme + ":  qabte Hore Loomagacaabay");
+                if (((Stmt.Function) method).name.lexeme.equals(stmt.name.lexeme)) {
+                    var function = new GobFunction((Stmt.Function) method, ENV, true);
+                    if (!initializers.containsKey(((Stmt.Function) method).name.lexeme)) {
+                        initializers.put(((Stmt.Function) method).name.lexeme, new LinkedList<>(List.of(function)));
+                    } else {
+                        initializers.get(((Stmt.Function) method).name.lexeme).add(function);
+                    }
+                } else {
+                    var function = new GobFunction((Stmt.Function) method, ENV, false);
+                    if (!methods.containsKey(((Stmt.Function) method).name.lexeme)) {
+                        methods.put(((Stmt.Function) method).name.lexeme, function);
+                    } else {
+                        throw new RuntimeError((((Stmt.Function) method).name), ((Stmt.Function) method).name.lexeme + ":  qabte Hore Loomagacaabay");
 
+                    }
+                }
             }
             else if(method instanceof Stmt.Var){
                 Object ev = evaluate(((Stmt.Var) method).initializer);
@@ -217,7 +225,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
 
             }
         }
-        GobClass klass = new GobClass(stmt.name.lexeme,(GobClass) superclass, methods);
+        GobClass klass = new GobClass(stmt.name.lexeme,(GobClass) superclass, methods, initializers);
         if (superclass != null) {
             ENV = ENV.enclosing;
         }
@@ -355,12 +363,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
             throw new RuntimeError(expr.paren, "Waxa Loo Yeedhi Karaa qabte Ama cayn Uun");
         }
         GobCalls function = (GobCalls) callee;
+        var call = function.call(this, arguments);
         if (arguments.size() != function.arity()) {
             throw new RuntimeError(expr.paren, "La Filayey " +
                     function.arity() + " masalo Lakin Waxa La Helay " +
                     arguments.size() + ".");
         }
-        return function.call(this, arguments);
+        return call;
     }
     @Override
     public Void visit(Stmt.Function func) {

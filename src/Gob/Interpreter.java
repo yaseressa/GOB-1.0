@@ -1,10 +1,9 @@
 package Gob;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import static Gob.TokenType.*;
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
     final Environment globals = new Environment();
     private Map<Expr, Integer> locals = new HashMap<>();
@@ -59,7 +58,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
         return expr.accept(this);
     }
     public Object isTruthy(Object bool){
-        if(bool == "ban") return false;
         if(bool == "run")
             return "run";
         if(bool == "been")
@@ -75,12 +73,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
         }
     }
 
+
     private boolean isEqual(Object left, Object right) {
         return (left == null && right == null) || left.equals(right);
     }
     private void checkOperand(Token operator, Object... objects) {
         for (var obj: objects) {
-            if (!(obj instanceof Double)) throw new RuntimeError(operator, "Number waa inay ahaadan Labaduba.");
+            if (!(obj instanceof Number)) throw new RuntimeError(operator, "Number waa inay ahaadan Labaduba.");
         }
     }
     private String stringify(Object object) {
@@ -100,58 +99,86 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
         Object right = evaluate(expr.right);
         Object left = evaluate(expr.left);
         switch (expr.operator.type) {
-            case MINUS -> {
-                checkOperand(expr.operator, left, right);
-                return (double) left - (double) right ;
+            case MINUS, PLUS, STAR, SLASH, PERCENT -> {
+                return performArithmeticOperation(left, right, expr.operator.type);
             }
-            case PLUS -> {
-                if (left instanceof Double && right instanceof Double) return (double) left + (double) right;
-                if(right instanceof String || left instanceof String){
-                    if(right instanceof Double) return left.toString() + String.valueOf(((Double) right).intValue());
-                    if(left instanceof Double) return String.valueOf(((Double) left).intValue()) + right.toString();
-                    if(right instanceof String && left instanceof String) return (String) left + (String) right;
-                }
+            case GREATER, GREATER_EQUAL, LESS, LESS_EQUAL, BANG_EQUAL, EQUAL_EQUAL -> {
+                return performComparisonOperation(left, right, expr.operator.type);
             }
-            case STAR -> {
-                checkOperand(expr.operator, left, right);
-                return (double) left * (double) right ;
-            }
-            case PERCENT -> {
-                checkOperand(expr.operator, left, right);
-                return (double) left % (double) right ;
-            }
-            case SLASH -> {
-                checkOperand(expr.operator, left, right);
-                return (double) left / (double) right ;
-            }
-            case GREATER -> {
-                checkOperand(expr.operator, left, right);
-                return ((double) left > (double) right) ? "run" : "been";
-            }
-            case GREATER_EQUAL -> {
-                checkOperand(expr.operator, left, right);
-                return (double) left >= (double) right  ? "run" : "been";
-            }
-            case LESS -> {
-                checkOperand(expr.operator, left, right);
-                return (double) left < (double) right  ? "run" : "been";
-            }
-            case LESS_EQUAL -> {
-                checkOperand(expr.operator, left, right);
-                return (double) left <= (double) right  ? "run" : "been";
-            }
-            case BANG_EQUAL -> {
-                checkOperand(expr.operator, left, right);
-                return !isEqual(left, right)  ? "run" : "been";
-            }
-            case EQUAL_EQUAL -> {
-                checkOperand(expr.operator, left, right);
-                return isEqual(left, right)  ? "run" : "been";
-            }
-
         }
         return null;
     }
+    private static Object performArithmeticOperation(Object left, Object right, TokenType operator) {
+        if (left instanceof String || right instanceof String) {
+            return left.toString() + right.toString();
+        }
+
+        boolean bothIntegers = left instanceof Integer && right instanceof Integer;
+        if (bothIntegers) {
+            int leftInt = (Integer) left;
+            int rightInt = (Integer) right;
+            switch (operator) {
+                case PLUS -> { return leftInt + rightInt; }
+                case MINUS -> { return leftInt - rightInt; }
+                case STAR -> { return leftInt * rightInt; }
+                case SLASH -> { return leftInt / rightInt; }
+                case PERCENT -> { return leftInt % rightInt; }
+                default -> { }
+            }
+        } else {
+            double leftDouble = ((Number) left).doubleValue();
+            double rightDouble = ((Number) right).doubleValue();
+            switch (operator) {
+                case PLUS -> { return leftDouble + rightDouble; }
+                case MINUS -> { return leftDouble - rightDouble; }
+                case STAR -> { return leftDouble * rightDouble; }
+                case SLASH -> { return (int)(leftDouble / rightDouble); }
+                case PERCENT -> { return leftDouble % rightDouble; }
+                default -> { }
+            }
+        }
+        return 0;
+    }
+    private static String performComparisonOperation(Object left, Object right, TokenType operator) {
+        if (left instanceof Number && right instanceof Number) {
+            double leftDouble, rightDouble;
+
+            if (!(left instanceof Integer && right instanceof Integer) || operator == BANG_EQUAL || operator == EQUAL_EQUAL) {
+                leftDouble = ((Number) left).doubleValue();
+                rightDouble = ((Number) right).doubleValue();
+            } else {
+                int leftInt = (Integer) left;
+                int rightInt = (Integer) right;
+                return switch (operator) {
+                    case GREATER -> leftInt > rightInt ? "run" : "been";
+                    case GREATER_EQUAL -> leftInt >= rightInt ? "run" : "been";
+                    case LESS -> leftInt < rightInt ? "run" : "been";
+                    case LESS_EQUAL -> leftInt <= rightInt ? "run" : "been";
+                    default -> throw new IllegalArgumentException("Unsupported operator for integer comparison.");
+                };
+            }
+
+            boolean result = switch (operator) {
+                case GREATER -> leftDouble > rightDouble;
+                case GREATER_EQUAL -> leftDouble >= rightDouble;
+                case LESS -> leftDouble < rightDouble;
+                case LESS_EQUAL -> leftDouble <= rightDouble;
+                case BANG_EQUAL -> leftDouble != rightDouble;
+                case EQUAL_EQUAL -> leftDouble == rightDouble;
+                default -> throw new IllegalArgumentException("Unsupported operator for comparison.");
+            };
+            return result ? "run" : "been";
+        } else {
+            boolean result = switch (operator) {
+                case BANG_EQUAL -> !left.equals(right);
+                case EQUAL_EQUAL -> left.equals(right);
+                default -> throw new IllegalArgumentException("Unsupported operator for non-Number comparison.");
+            };
+            return result ? "run" : "been";
+        }
+    }
+
+
     @Override
     public Object visit(Expr.Grouping expr) {
         return evaluate(expr.expression);
@@ -246,6 +273,17 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
         System.out.println(stringify(evaluate(stmt.expression)));
         return null;
     }
+
+    @Override
+    public Object visit(Expr.Length expr) {
+    Object value = evaluate(expr.expression);
+        if (value instanceof ArrayList) {
+            return (double)(((ArrayList<?>) value).size());
+        } else {
+            throw new RuntimeError(((Expr.Variable)expr.expression).name, "taxaneyaasha kaliya Ayuunba Leh dherer");
+        }
+    }
+
     @Override
     public Void visit(Stmt.Var stmt) {
         Object value = null;
@@ -256,6 +294,17 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
         return null;
     }
 
+    @Override
+    public Void visit(Stmt.Listing stmt) {
+        ArrayList<Object> value = new ArrayList<>();
+        if (stmt.initializer != null) {
+            for (Expr v: stmt.initializer) {
+                value.add(evaluate(v));
+            }
+        }
+        ENV.declare(stmt.name.lexeme, value);
+        return null;
+    }
 
 
     @Override
@@ -289,6 +338,58 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
     }
 
     @Override
+    public Object visit(Expr.ListCall expr) {
+        try {
+
+            Object index = evaluate(expr.index);
+            var looked = evaluate(expr.name);
+            if (looked instanceof ArrayList) {
+                return ((ArrayList) looked).get(Integer.parseInt(index.toString().split("[.]")[0]));
+            } else {
+                throw new RuntimeError(((Expr.Variable)expr.name).name, "doorsomahani maha taxane [" + expr.name + "]");
+            }
+
+        } catch (IndexOutOfBoundsException ex) {
+            ArrayList looked = (ArrayList) lookUpVariable(((Expr.Variable)expr.name).name, expr);
+            throw new RuntimeError(((Expr.Variable)expr.name).name, "God aan jirin " + "Taxanaha '" + expr.name + "' dhererkiisu waa " + looked.size());
+        }
+//        try{
+//        return lookUpVariable(expr.name, expr);
+//        }
+//        catch(Exception ex){
+//            Object index = expr.index.accept(this);
+//        return lookUpVariable(expr.name, expr, Integer.parseInt(String.valueOf(index).split("[.]")[0]));
+//        }        try{
+//        return lookUpVariable(expr.name, expr);
+//        }
+//        catch(Exception ex){
+//            Object index = expr.index.accept(this);
+//        return lookUpVariable(expr.name, expr, Integer.parseInt(String.valueOf(index).split("[.]")[0]));
+//        }
+    }
+
+    @Override
+    public Object visit(Expr.ListUpdate expr) {
+        Object value = evaluate(expr.value);
+        try {
+
+            Object index = evaluate(expr.index);
+            var looked = evaluate(expr.name);
+            if (looked instanceof ArrayList) {
+                ((ArrayList) looked).set(Integer.parseInt(index.toString().split("[.]")[0]), value);
+                return value;
+            } else {
+                throw new RuntimeError(expr.name.name, "doorsomahani maha taxane [" + expr.name.name.literal + "]");
+            }
+
+
+        } catch (IndexOutOfBoundsException ex) {
+            ArrayList looked = (ArrayList) lookUpVariable(expr.name.name, expr);
+            throw new RuntimeError(expr.name.name, "God aan jirin " + "Taxanaha '" + expr.name.name.lexeme + "' dhererkiisu waa " + looked.size());
+        }
+    }
+
+    @Override
     public Object visit(Expr.Assign expr) {
         Object value = evaluate(expr.value);
         Integer distance = locals.get(expr);
@@ -299,6 +400,62 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
         }
         return value;
     }
+
+    @Override
+    public Void visit(Expr.CompAssign expr) {
+        Object value = evaluate(expr.value);
+
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            var ogValue = ENV.getVariable(expr.name);
+            if (ogValue instanceof String) {
+                if (expr.operator.type == COMPOUND_PLUS) {
+                    ENV.assignAt(distance, expr.name, String.valueOf(ogValue) + value);
+                    return null;
+                }
+                throw new RuntimeError(expr.name, "walaxdan hawlgalkan looma sameyn karo");
+            }
+            if (ogValue instanceof Double) {
+                doubleOperations(expr, ogValue, value);
+                return null;
+            } else if (ogValue instanceof Integer) {
+                integerOperations(expr, ogValue, value);
+                return null;
+            }
+        } else {
+            var ogValue = ENV.getVariable(expr.name);
+            if(ogValue instanceof String){
+                if(expr.operator.type == COMPOUND_PLUS){
+                    ENV.assign(expr.name, String.valueOf(ogValue) + value);
+                    return null;
+                }
+                throw new RuntimeError(expr.name, "walaxdan hawlgalkan looma sameyn karo");
+            }
+            if(ogValue instanceof Double){
+                doubleOperations(expr, ogValue, value);
+                return null;
+            }else if(ogValue instanceof Integer){
+                integerOperations(expr, ogValue, value);
+                return null;
+            }
+        }
+        throw new RuntimeError(expr.name, "walaxdan hawlgalkan looma sameyn karo");
+    }
+
+void doubleOperations(Expr.CompAssign expr, Object ogValue, Object value){
+    if(expr.operator.type == COMPOUND_PLUS) ENV.assign(expr.name, (Double)ogValue + (Double)value);
+    if(expr.operator.type == COMPOUND_MINUS) ENV.assign(expr.name, (Double)ogValue - (Double)value);
+    if(expr.operator.type == COMPOUND_SLASH) ENV.assign(expr.name, (Double)ogValue / (Double)value);
+    if(expr.operator.type == COMPOUND_STAR) ENV.assign(expr.name, (Double)ogValue * (Double)value);
+    if(expr.operator.type == COMPOUND_PERCENT) ENV.assign(expr.name, (Double)ogValue % (Double)value);
+}
+void integerOperations(Expr.CompAssign expr, Object ogValue, Object value){
+    if(expr.operator.type == COMPOUND_PLUS) ENV.assign(expr.name, (Integer)ogValue + (Integer)value);
+    if(expr.operator.type == COMPOUND_MINUS) ENV.assign(expr.name, (Integer)ogValue - (Integer)value);
+    if(expr.operator.type == COMPOUND_SLASH) ENV.assign(expr.name, (Integer)ogValue / (Integer)value);
+    if(expr.operator.type == COMPOUND_STAR) ENV.assign(expr.name, (Integer)ogValue * (Integer)value);
+    if(expr.operator.type == COMPOUND_PERCENT) ENV.assign(expr.name, (Integer)ogValue % (Integer)value);
+}
 
     @Override
     public Object visit(Expr.Logical expr) {

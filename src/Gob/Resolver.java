@@ -113,8 +113,21 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void>{
         return null;
     }
 
+
+    @Override
+    public Void visit(Expr.ListUpdate expr) {
+        return null;
+    }
+
     @Override
     public Void visit(Expr.Assign expr) {
+        resolve(expr.value);
+        resolveLocal(expr, expr.name);
+        return null;
+    }
+
+    @Override
+    public Void visit(Expr.CompAssign expr) {
         resolve(expr.value);
         resolveLocal(expr, expr.name);
         return null;
@@ -234,6 +247,19 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void>{
     public Void visit(Stmt.Print stmt) {
         resolve(stmt.expression);
         return null;    }
+    @Override
+    public Void visit(Expr.ListCall expr) {
+        resolve(expr.index);
+        resolve(((Expr.Variable)expr.name));
+        return null;
+    }
+
+
+    @Override
+    public Void visit(Expr.Length expr) {
+        resolve(expr.expression);
+        return null;
+    }
 
     @Override
     public Void visit(Stmt.Var stmt) {
@@ -241,6 +267,13 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void>{
         if (stmt.initializer != null) {
             resolve(stmt.initializer);
         }
+        define(stmt.name);
+        return null;
+    }
+
+    @Override
+    public Void visit(Stmt.Listing stmt) {
+        declare(stmt.name);
         define(stmt.name);
         return null;
     }

@@ -13,6 +13,13 @@ public class Parser {
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
     }
+    List<Stmt> parse() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!isAtEnd()) {
+            statements.add(declaration());
+        }
+        return statements;
+    }
     private Expr expression() {
         return assignment();
     }
@@ -30,7 +37,13 @@ public class Parser {
                     Expr.Get get = (Expr.Get)expr;
                     return new Expr.Set(get.object, get.name, value);
                 }
-                error(equals, "Meelayn Aan La Oogalyn");
+                else if (expr instanceof Expr.ListCall) {
+                    Expr.ListCall get = (Expr.ListCall)expr;
+                    return new Expr.ListUpdate(get.name, get.index, value);
+                }
+                else {
+                    error(equals, "Meelayn Aan La Oogalyn");
+                }
             }
             return expr;
     }
@@ -57,13 +70,6 @@ public class Parser {
         return expr;
     }
 
-    List<Stmt> parse() {
-        List<Stmt> statements = new ArrayList<>();
-        while (!isAtEnd()) {
-            statements.add(declaration());
-        }
-        return statements;
-    }
     private Stmt declaration() {
         try {
             if (match(VAR)) return varDeclaration();
@@ -75,13 +81,27 @@ public class Parser {
     }
 
     private Stmt varDeclaration() {
-        Token name = consume(IDENTIFIER, "La Filayyey magaca doorsome");
-        Expr initializer = null;
+        Token name = consume(IDENTIFIER, "La Filayey magaca doorsome");
+        Object initializer = null;
         if (match(EQUAL)) {
-            initializer = expression();
+            if(match(LEFT_SQUARE)){
+                initializer = new ArrayList<Expr>();
+                ((ArrayList<Expr>) initializer).add(expression());
+                while(match(COMMA)){
+                    ((ArrayList<Expr>) initializer).add(expression());
+                }
+                consume(RIGHT_SQUARE, "La Filayey ']' Magacabista doorsome Kadib.");
+                consume(SEMICOLON, "La Filayey ';' Magacabista doorsome Kadib.");
+                return new Stmt.Listing(name, (ArrayList<Expr>) initializer);
+            }
+            else {
+                initializer = expression();
+
+            }
         }
         consume(SEMICOLON, "La Filayey ';' Magacabista doorsome Kadib.");
-        return new Stmt.Var(name, initializer);
+        return new Stmt.Var(name, (Expr) initializer);
+
     }
 
     private void synchronize(){
@@ -123,6 +143,16 @@ public class Parser {
             }
         consume(SEMICOLON, "La Filayey ';' Qiimo Kadib.");
         return new Stmt.Print(value);
+    }
+    private Expr lengthStatement() {
+        Expr value ;
+        if (match(LEFT_PAREN)) {
+                value = expression();
+                consume(RIGHT_PAREN, "La Filayey ')' tacbiir Kadib");
+            } else {
+                value = expression();
+            }
+        return new Expr.Length(value);
     }
     private Stmt expressionStatement() {
         Expr expr = expression();
@@ -260,7 +290,7 @@ public class Parser {
             } while (match(COMMA));
         }
         Token paren = consume(RIGHT_PAREN,
-                "La Filayey ';' masalo Kadib");
+                "La Filayey ')' masalo Kadib");
         return new Expr.Call(callee, paren, arguments);
     }
     private Stmt statement() {
@@ -274,9 +304,6 @@ public class Parser {
         if (match(CLASS)) return classDeclaration();
         return expressionStatement();
     }
-
-
-
     private Expr primary(){
         if(match(FALSE)) return new Expr.Literal("been");
         if (match(THIS)) return new Expr.This(previous());
@@ -289,9 +316,27 @@ public class Parser {
         }
         if(match(TRUE)) return new Expr.Literal("run");
         if(match(NIL)) return new Expr.Literal("ban");
-
+        if (match(LENGTH)) return lengthStatement();
         if (match(IDENTIFIER)) {
-            return new Expr.Variable(previous());
+            var variable = previous();
+            if(match(LEFT_SQUARE)){
+                Expr idx = null;
+                while(match(NUMBER)){
+                    idx = new Expr.Literal(Integer.parseInt(previous().literal.toString().split("[.]")[0]));
+
+                }
+                if(match(IDENTIFIER)){
+                    idx = new Expr.Variable(new Token(VAR,previous().lexeme.toString(), null, previous().line));
+
+                }
+                if(match(MINUS)){
+                    consume(MINUS, "godku negative manoqon karo [" + previous().lexeme.toString() + "]");
+                }
+                consume(RIGHT_SQUARE, "La Filayey ']' god Kadib");
+                return new Expr.ListCall(new Expr.Variable(variable), idx);
+
+            }
+            return new Expr.Variable(variable);
         }
         if(match(NUMBER, STRING)){
             return new Expr.Literal(previous().literal);
@@ -325,17 +370,20 @@ public class Parser {
         return call();
 
     }
-
-
-
-
-
     private Expr factor() {
         Expr expr = unary();
         while (match(SLASH, STAR, PERCENT)) {
             Token operator = previous();
             Expr right = unary();
             expr = new Expr.Binary(expr, operator, right);
+        }
+        while (match(COMPOUND_SLASH, COMPOUND_STAR, COMPOUND_PERCENT)) {
+            Token operator = previous();
+            Expr right = factor();
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+                expr = new Expr.CompAssign(name, operator, right);
+            }
         }
         return expr;
     }
@@ -345,6 +393,15 @@ public class Parser {
             Token operator = previous();
             Expr right = factor();
             expr = new Expr.Binary(expr, operator, right);
+
+        }
+        while (match(COMPOUND_MINUS, COMPOUND_PLUS)) {
+            Token operator = previous();
+            Expr right = factor();
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+                expr = new Expr.CompAssign(name, operator, right);
+            }
         }
         return expr;
     }

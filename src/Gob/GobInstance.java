@@ -4,11 +4,12 @@ import java.util.*;
 
 public class GobInstance {
     private final GobClass klass;
-    private  Map<String, Object> fields = new HashMap<>();
+    private final Map<String, Object> fields = new HashMap<>();
 
-    GobInstance(GobClass klass, Map<String, Object> prexisting) {
+    GobInstance(GobClass klass, Map<String, Object> pre) {
         this.klass = klass;
-        this.fields = prexisting;
+        if(pre != null)
+            this.fields.putAll(pre);
     }
     @Override
     public String toString() {

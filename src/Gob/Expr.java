@@ -5,6 +5,7 @@ import java.util.List;
 abstract class Expr {
  interface Visitor<R> {
  R visit(Assign expr);
+ R visit(CompAssign expr);
  R visit(Binary expr);
  R visit(Call expr);
  R visit(Get expr);
@@ -16,6 +17,9 @@ abstract class Expr {
  R visit(This expr);
  R visit(Unary expr);
  R visit(Variable expr);
+ R visit(ListCall expr);
+ R visit(ListUpdate expr);
+ R visit(Length expr);
  }
  static class Assign extends Expr {
  Assign(Token name, Expr value) {
@@ -29,6 +33,22 @@ abstract class Expr {
  }
 
  final Token name;
+ final Expr value;
+ }
+ static class CompAssign extends Expr {
+ CompAssign(Token name, Token operator, Expr value) {
+ this.name = name;
+ this.operator = operator;
+ this.value = value;
+ }
+
+ @Override
+ <R> R accept(Visitor<R> visitor) {
+ return visitor.visit(this);
+ }
+
+ final Token name;
+ final Token operator;
  final Expr value;
  }
  static class Binary extends Expr {
@@ -184,6 +204,48 @@ abstract class Expr {
  }
 
  final Token name;
+ }
+ static class ListCall extends Expr {
+ ListCall(Expr.Variable name, Expr index) {
+ this.name = name;
+ this.index = index;
+ }
+
+ @Override
+ <R> R accept(Visitor<R> visitor) {
+ return visitor.visit(this);
+ }
+
+ final Expr.Variable name;
+ final Expr index;
+ }
+ static class ListUpdate extends Expr {
+ ListUpdate(Expr.Variable name, Expr index, Expr value) {
+ this.name = name;
+ this.index = index;
+ this.value = value;
+ }
+
+ @Override
+ <R> R accept(Visitor<R> visitor) {
+ return visitor.visit(this);
+ }
+
+ final Expr.Variable name;
+ final Expr index;
+ final Expr value;
+ }
+ static class Length extends Expr {
+ Length(Expr expression) {
+ this.expression = expression;
+ }
+
+ @Override
+ <R> R accept(Visitor<R> visitor) {
+ return visitor.visit(this);
+ }
+
+ final Expr expression;
  }
 
  abstract <R> R accept(Visitor<R> visitor);

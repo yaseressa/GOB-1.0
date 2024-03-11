@@ -28,6 +28,7 @@ public class Scanner {
         keywords.put("run", TRUE);
         keywords.put("door", VAR);
         keywords.put("intay", WHILE);
+        keywords.put("dherer", LENGTH);
     }
     private final List<Token> tokens = new ArrayList<>();
     private final String source;
@@ -64,8 +65,8 @@ public class Scanner {
         if (current + 1 >= source.length()) return '\0';
         return source.charAt(current + 1);
     }
-    private void string() {
-        while (peek() != '"' && !isAtEnd()) {
+    private void string(char s) {
+        while ((s == '"' && peek() != '"') || (s == '\'' && peek() != '\'') && !isAtEnd()) {
             if (peek() == '\n') line++;
             advance();
         }
@@ -104,7 +105,7 @@ public class Scanner {
                 addToken(TokenType.LEFT_PAREN);
                 break;
             case '%':
-                addToken(PERCENT);
+                addToken(match('=') ? COMPOUND_PERCENT: PERCENT);
                 break;
             case ')':
                 addToken(TokenType.RIGHT_PAREN);
@@ -115,6 +116,12 @@ public class Scanner {
             case '}':
                 addToken(TokenType.RIGHT_BRACE);
                 break;
+            case '[':
+                addToken(LEFT_SQUARE);
+                break;
+            case ']':
+                addToken(RIGHT_SQUARE);
+                break;
             case ',':
                 addToken(TokenType.COMMA);
                 break;
@@ -122,16 +129,16 @@ public class Scanner {
                 addToken(TokenType.DOT);
                 break;
             case '-':
-                addToken(TokenType.MINUS);
+                addToken(match('=') ? COMPOUND_MINUS : MINUS);
                 break;
             case '+':
-                addToken(TokenType.PLUS);
+                addToken(match('=') ? COMPOUND_PLUS: PLUS);
                 break;
             case ';':
                 addToken(TokenType.SEMICOLON);
                 break;
             case '*':
-                addToken(TokenType.STAR);
+                addToken(match('=') ? COMPOUND_STAR : STAR);
                 break;
             case '!':
                 addToken(match('=') ? BANG_EQUAL : BANG);
@@ -147,13 +154,16 @@ public class Scanner {
                 break;
             case '/':
                 if (match('/')) while (peek() != '\n' && !isAtEnd()) advance();
-                else addToken(SLASH);
+                else addToken(match('=') ? COMPOUND_SLASH: SLASH);
                 break;
             case ' ': case '\r': case '\t': break; case '\n':
                 line++;
                 break;
             case '"':
-                string();
+                string('"');
+                break;
+            case '\'':
+                string('\'');
                 break;
             default:
                 if (isDigit(c)) {

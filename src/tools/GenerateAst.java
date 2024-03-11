@@ -15,6 +15,7 @@ public class GenerateAst {
         }
         defineAst(outputDir, "Expr", Arrays.asList(
                 "Assign : Token name, Expr value",
+                "CompAssign : Token name, Token operator, Expr value",
                 "Binary : Expr left, Token operator, Expr right",
                 "Call : Expr callee, Token paren, List<Expr> arguments",
                 "Get : Expr object, Token name",
@@ -25,7 +26,10 @@ public class GenerateAst {
                 "Super : Token keyword, Token method",
                 "This : Token keyword",
                 "Unary : Token operator, Expr right",
-                "Variable : Token name"
+                "Variable : Token name",
+                "ListCall: Expr.Variable name, Expr index",
+                "ListUpdate: Expr.Variable name, Expr index, Expr value",
+                "Length : Expr expression"
         ));
         defineAst(outputDir, "Stmt", Arrays.asList(
                 "Block : List<Stmt> statements",
@@ -33,6 +37,7 @@ public class GenerateAst {
                 "Expression : Expr expression",
                 "Print : Expr expression",
                 "Var : Token name, Expr initializer",
+                "Listing : Token name, ArrayList<Expr> initializer",
                 "Function : Token name, List<Token> params, List<Stmt> body",
                 "Return : Token keyword, Expr value",
                 "If : Expr condition, Stmt thenBranch, Stmt elseBranch, Stmt elseIF",

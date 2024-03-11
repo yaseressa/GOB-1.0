@@ -17,24 +17,26 @@ public class Gob {
 
         if (args.length > 1) {
             System.out.println("Istimaal: [programka]");
-                    System.exit(64);
+            System.exit(64);
         } else if (args.length == 1) {
             runFile(args[0]);
         } else {
             runPrompt();
         }
 
-        }
+    }
+
     private static void runFile(String path) throws IOException {
         byte[] bytes = Files.readAllBytes(Paths.get(path));
         run(new String(bytes, Charset.defaultCharset()));
         if (hasError) System.exit(65);
         if (hasRuntimeError) System.exit(70);
     }
+
     private static void runPrompt() throws IOException {
         InputStreamReader input = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(input);
-        while(true) {
+        while (true) {
             System.out.print("Qor ==>> ");
             String line = reader.readLine();
             if (line == null) break;
@@ -42,6 +44,7 @@ public class Gob {
             hasError = false;
         }
     }
+
     private static void run(String source) {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
@@ -54,14 +57,17 @@ public class Gob {
                 interpret(statements);
 
     }
+
     static void error(int line, String message) {
         report(line, "", message);
     }
+
     private static void report(int line, String where,
                                String message) {
         System.err.println("Qalad" + where + ": " + message + "   ( laynka " + line + " ).");
         hasError = true;
     }
+
     static void error(Token token, String message) {
         if (token.type == TokenType.EOF) {
             report(token.line, " halka u dambaysa", message);
@@ -69,8 +75,9 @@ public class Gob {
             report(token.line, " isticmaal '" + token.lexeme + "'", message);
         }
     }
+
     static void runtimeError(RuntimeError error) {
-        System.err.println(error.getMessage() + "\n   ( laynka " + error.token.line + " ).");
+        System.err.println(error.getMessage() + "\t\t   ( laynka " + error.token.line + " ).");
         hasRuntimeError = true;
     }
-    }
+}

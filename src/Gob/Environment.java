@@ -21,7 +21,6 @@ public class Environment {
             return variables.get(name.lexeme);
         }
         if (enclosing != null) return enclosing.getVariable(name);
-
         throw new RuntimeError(name, "doorsome aan la magaacabin '" + name.lexeme + "'.");
     }
 

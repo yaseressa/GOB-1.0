@@ -3,6 +3,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
+
 import static Gob.TokenType.*;
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
     final Environment globals = new Environment();
@@ -22,6 +24,21 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
             public Object call(Interpreter interpreter,
                                List<Object> arguments) {
                 return (double)System.currentTimeMillis() / 1000.0;
+            }
+            @Override
+            public String toString() { return "<native qabte>"; }
+        });
+        globals.declare("akhri", new GobCalls() {
+            @Override
+            public int arity() { return 0; }
+            @Override
+            public Object call(Interpreter interpreter,
+                               List<Object> arguments) {
+                try {
+                    return evaluate(new Expr.Literal(new Scanner(System.in).nextLine().trim()));
+                } catch (Exception e) {
+                    return null;
+                }
             }
             @Override
             public String toString() { return "<native qabte>"; }
@@ -56,57 +73,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
 
     public Object evaluate(Expr expr){
         return expr.accept(this);
-    }
-    public Object isTruthy(Object bool){
-        if(bool == "run")
-            return "run";
-        if(bool == "been")
-            return "been";
-        return "been";
-    }
-    private Object lookUpVariable(Token name, Expr expr) {
-        Integer distance = locals.get(expr);
-        if (distance != null) {
-            return ENV.getAt(distance, name.lexeme);
-        } else {
-            return globals.getVariable(name);
-        }
-    }
-
-
-    private boolean isEqual(Object left, Object right) {
-        return (left == null && right == null) || left.equals(right);
-    }
-    private void checkOperand(Token operator, Object... objects) {
-        for (var obj: objects) {
-            if (!(obj instanceof Number)) throw new RuntimeError(operator, "Number waa inay ahaadan Labaduba.");
-        }
-    }
-    private String stringify(Object object) {
-        if (object == null) return "ban";
-        if (object instanceof Double) {
-            String text = object.toString();
-            if (text.endsWith(".0")) {
-                text = text.substring(0, text.length() - 2);
-            }
-            return text;
-        }
-        return object.toString();
-    }
-
-    @Override
-    public Object visit(Expr.Binary expr) {
-        Object right = evaluate(expr.right);
-        Object left = evaluate(expr.left);
-        switch (expr.operator.type) {
-            case MINUS, PLUS, STAR, SLASH, PERCENT -> {
-                return performArithmeticOperation(left, right, expr.operator.type);
-            }
-            case GREATER, GREATER_EQUAL, LESS, LESS_EQUAL, BANG_EQUAL, EQUAL_EQUAL -> {
-                return performComparisonOperation(left, right, expr.operator.type);
-            }
-        }
-        return null;
     }
     private static Object performArithmeticOperation(Object left, Object right, TokenType operator) {
         if (left instanceof String || right instanceof String) {
@@ -176,6 +142,58 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
             };
             return result ? "run" : "been";
         }
+    }
+
+    public Object isTruthy(Object bool){
+        if(bool == "run")
+            return "run";
+        if(bool == "been")
+            return "been";
+        return "been";
+    }
+    private Object lookUpVariable(Token name, Expr expr) {
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            return ENV.getAt(distance, name.lexeme);
+        } else {
+            return globals.getVariable(name);
+        }
+    }
+
+
+    private boolean isEqual(Object left, Object right) {
+        return (left == null && right == null) || left.equals(right);
+    }
+    private void checkOperand(Token operator, Object... objects) {
+        for (var obj: objects) {
+            if (!(obj instanceof Number)) throw new RuntimeError(operator, "Number waa inay ahaadan Labaduba.");
+        }
+    }
+    private String stringify(Object object) {
+        if (object == null) return "ban";
+        if (object instanceof Double) {
+            String text = object.toString();
+            if (text.endsWith(".0")) {
+                text = text.substring(0, text.length() - 2);
+            }
+            return text;
+        }
+        return object.toString();
+    }
+
+    @Override
+    public Object visit(Expr.Binary expr) {
+        Object right = evaluate(expr.right);
+        Object left = evaluate(expr.left);
+        switch (expr.operator.type) {
+            case MINUS, PLUS, STAR, SLASH, PERCENT -> {
+                return performArithmeticOperation(left, right, expr.operator.type);
+            }
+            case GREATER, GREATER_EQUAL, LESS, LESS_EQUAL, BANG_EQUAL, EQUAL_EQUAL -> {
+                return performComparisonOperation(left, right, expr.operator.type);
+            }
+        }
+        return null;
     }
 
 
@@ -269,8 +287,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
     }
 
     @Override
-    public Void visit(Stmt.Print stmt) {
+    public Void visit(Stmt.PrintLN stmt) {
         System.out.println(stringify(evaluate(stmt.expression)));
+        return null;    }
+
+    @Override
+    public Void visit(Stmt.Print stmt) {
+        System.out.print(stringify(evaluate(stmt.expression)));
         return null;
     }
 
@@ -346,12 +369,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void>{
             if (looked instanceof ArrayList) {
                 return ((ArrayList) looked).get(Integer.parseInt(index.toString().split("[.]")[0]));
             } else {
-                throw new RuntimeError(((Expr.Variable)expr.name).name, "doorsomahani maha taxane [" + expr.name + "]");
+                throw new RuntimeError(expr.name.name, "doorsomahani maha taxane [" + expr.name + "]");
             }
 
         } catch (IndexOutOfBoundsException ex) {
-            ArrayList looked = (ArrayList) lookUpVariable(((Expr.Variable)expr.name).name, expr);
-            throw new RuntimeError(((Expr.Variable)expr.name).name, "God aan jirin " + "Taxanaha '" + expr.name + "' dhererkiisu waa " + looked.size());
+            ArrayList looked = (ArrayList) lookUpVariable(expr.name.name, expr);
+            throw new RuntimeError(expr.name.name, "God aan jirin " + "Taxanaha '" + expr.name + "' dhererkiisu waa " + looked.size());
         }
 //        try{
 //        return lookUpVariable(expr.name, expr);

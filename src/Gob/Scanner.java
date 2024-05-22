@@ -22,6 +22,7 @@ public class Scanner {
         keywords.put("ama", OR);
         keywords.put("dhaxal", EXTENDS);
         keywords.put("daabac", PRINT);
+        keywords.put("daabacLn", PRINTLN);
         keywords.put("celi", RETURN);
         keywords.put("ab", SUPER);
         keywords.put("kan", THIS);

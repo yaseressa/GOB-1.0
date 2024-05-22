@@ -35,6 +35,7 @@ public class GenerateAst {
                 "Block : List<Stmt> statements",
                 "Class : Token name, Expr.Variable superclass, List<Object> methods",
                 "Expression : Expr expression",
+                "PrintLN : Expr expression",
                 "Print : Expr expression",
                 "Var : Token name, Expr initializer",
                 "Listing : Token name, ArrayList<Expr> initializer",

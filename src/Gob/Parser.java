@@ -84,24 +84,20 @@ public class Parser {
         Token name = consume(IDENTIFIER, "La Filayey magaca doorsome");
         Object initializer = null;
         if (match(EQUAL)) {
-            if(match(LEFT_SQUARE)){
+            if (match(LEFT_SQUARE)) {
                 initializer = new ArrayList<Expr>();
                 ((ArrayList<Expr>) initializer).add(expression());
-                while(match(COMMA)){
+                while (match(COMMA)) {
                     ((ArrayList<Expr>) initializer).add(expression());
                 }
                 consume(RIGHT_SQUARE, "La Filayey ']' Magacabista doorsome Kadib.");
                 consume(SEMICOLON, "La Filayey ';' Magacabista doorsome Kadib.");
                 return new Stmt.Listing(name, (ArrayList<Expr>) initializer);
             }
-            else {
-                initializer = expression();
-
-            }
+            initializer = expression();
         }
         consume(SEMICOLON, "La Filayey ';' Magacabista doorsome Kadib.");
         return new Stmt.Var(name, (Expr) initializer);
-
     }
 
     private void synchronize(){
@@ -141,6 +137,17 @@ public class Parser {
             } else {
                 value = expression();
             }
+        consume(SEMICOLON, "La Filayey ';' Qiimo Kadib.");
+        return new Stmt.Print(value);
+    }
+    private Stmt printLNStatement() {
+        Expr value ;
+        if (match(LEFT_PAREN)) {
+            value = expression();
+            consume(RIGHT_PAREN, "La Filayey ')' tacbiir Kadib");
+        } else {
+            value = expression();
+        }
         consume(SEMICOLON, "La Filayey ';' Qiimo Kadib.");
         return new Stmt.Print(value);
     }
@@ -298,6 +305,7 @@ public class Parser {
         if(match(FOR)) return forStatement();
         if(match(WHILE)) return whileStatement();
         if (match(PRINT)) return printStatement();
+        if (match(PRINTLN)) return printLNStatement();
         if (match(LEFT_BRACE)) return new Stmt.Block(block());
         if (match(FUN)) return function("qabte");
         if (match(RETURN)) return returnStatement();
@@ -371,7 +379,7 @@ public class Parser {
 
     }
     private Expr factor() {
-        Expr expr = unary();
+        Expr expr = parenthesis();
         while (match(SLASH, STAR, PERCENT)) {
             Token operator = previous();
             Expr right = unary();
@@ -386,6 +394,14 @@ public class Parser {
             }
         }
         return expr;
+    }
+    private Expr parenthesis() {
+        if (match(LEFT_PAREN)) {
+            Expr expr = expression();
+            consume(RIGHT_PAREN, "La Filayey ')' Tacbiir Kadib.");
+            return new Expr.Grouping(expr);
+        }
+        return unary();
     }
     private Expr term() {
         Expr expr = factor();

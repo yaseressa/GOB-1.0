@@ -13,20 +13,35 @@ public class Gob {
     static boolean hasRuntimeError = false;
     static Interpreter interpreter = new Interpreter();
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args){
 
         if (args.length > 1) {
             System.out.println("Istimaal: [programka]");
             System.exit(64);
         } else if (args.length == 1) {
-            runFile(args[0]);
+            String arg = args[0].replace("\\\\", "/");
+            try {
+                runFile(arg);
+            } catch (IOException e) {
+                System.err.println("Faylka lama helin: " + arg);
+                System.exit(64);
+            }
         } else {
-            runPrompt();
+            try {
+                runPrompt();
+            } catch (IOException e) {
+                System.err.println("Waxaad ka qaybqaadan kartaa");
+                System.exit(64);
+            }
         }
 
     }
 
     private static void runFile(String path) throws IOException {
+        if(!path.endsWith(".gob")){
+            System.err.println("Fadlan isticmaal fileka .gob");
+            System.exit(64);
+        }
         byte[] bytes = Files.readAllBytes(Paths.get(path));
         run(new String(bytes, Charset.defaultCharset()));
         if (hasError) System.exit(65);
